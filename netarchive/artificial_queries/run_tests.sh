@@ -21,11 +21,12 @@ _=${TESTQUERIES:=2000}
 
 _=${QEXTRA:=""}
 _=${FACET:="true"}
+_=${SPARSE:="true"}
 _=${FACETFIELDS:="public_suffix content_type_norm crawl_year domain links_domains"}
 _=${FACETLIMIT:=10}
 _=${FL:="id,source_file_s,url_norm,host,domain,content_type_served,content_length,crawl_date,content_language"}
 
-if [ ! -f $QUERYFOLDER ]; then
+if [ ! -d $QUERYFOLDER ]; then
     >&2 echo "Error: The query folder \"$QUERYFOLDER\" does not exist."
     >&2 echo "It must be created with ./get_top.sh before executing ./run_tests.sh."
     exit 1
@@ -39,10 +40,10 @@ echo "Storing test results in $DEST"
 mkdir -p "$DEST"
 
 QBASE="wt=json"
-BASEURL="${SOLR}/select?${QBASE}&${QEXTRA}`echo \" $FACETFIELDS\" | sed 's/ \+/\&facet.field=/g'`&facet=${FACET}&fl=${FL}&facet.limit=${FACETLIMIT}"
+BASEURL="${SOLR}/select?${QBASE}&${QEXTRA}`echo \" $FACETFIELDS\" | sed 's/ \+/\&facet.field=/g'`&facet=${FACET}&fl=${FL}&facet.limit=${FACETLIMIT}&facet.sparse=${SPARSE}"
 
 for TERMS in `seq 1 $MAXTERMS`; do
-    QUERIES=$QUERYFOLDER/queries.${TERMS}.*
+    QUERIES=$QUERYFOLDER/queries.${TERMS}
     if [ ! -s $QUERIES ]; then
         >2& echo "Unable to locate $QUERIES from `pwd`"
         continue
