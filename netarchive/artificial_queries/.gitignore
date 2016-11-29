@@ -1,5 +1,5 @@
 queries
-search.[0-9]
+search.[0-9].gz
 *.conf
 performance.include
 run_tests.sh
