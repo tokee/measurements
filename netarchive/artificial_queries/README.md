@@ -28,3 +28,6 @@ Executes a test using the queries from the top scrips.
 
 ./extract_results.sh
 Produces graphs over the result from the test script.
+
+
+TODO: Isolate the internal Statsbiblioteket machines & ports from the other configurations so that the configuration for each test can be shared freely.
