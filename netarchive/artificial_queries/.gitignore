@@ -1,0 +1,6 @@
+queries
+search.[0-9]
+*.conf
+performance.include
+run_tests.sh
+*~
