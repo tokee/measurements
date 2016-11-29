@@ -33,10 +33,13 @@ _=${MAXTERMS:=4}
 _=${YMAX:=6000}
 
 # Individual visualizations
+CONCAT=1_to_${MAXTERMS}_terms_concatenated
+echo -n "" > $CONCAT
 for TERMS in `seq 1 $MAXTERMS`; do
     echo "- Processing queries with $TERMS terms"
     if [ -s "search.${TERMS}.gz" ]; then
         zcat "search.${TERMS}.gz" | sed 's/.*QTime..\([0-9]*\).*numFound..\([0-9]*\).*/\2 \1/' | grep "[0-9]\+ [1-9][0-9]*" > "search.${TERMS}.not0"
+        cat "search.${TERMS}.not0" >> $CONCAT
     elif [ -s "search.${TERMS}.not0" ]; then
         echo "The raw Solr responses search.${TERMS} does not exist, but search.${TERMS}.not0 already exists"
     else
@@ -48,12 +51,15 @@ for TERMS in `seq 1 $MAXTERMS`; do
     MAXEXP=9 LOGY=false ../bucket.sh plotXYlog "${TERMS}-terms"
 done
 
-# Merged visualization
+# Merged visualizations
 OUT=1_to_${MAXTERMS}_terms.png MAXEXP=9 LOGY=false ../bucket.sh plotXYlogs *-terms
+OUT=${CONCAT}.png MAXEXP=9 LOGY=false ../bucket.sh plotXYlog $CONCAT
+
 for TERMS in `seq 1 $MAXTERMS`; do
     if [ -s "${TERMS}-terms" ]; then
         rm "${TERMS}-terms"
     fi
 done
-
+rm $CONCAT
+    
 popd > /dev/null
