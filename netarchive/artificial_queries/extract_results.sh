@@ -35,8 +35,8 @@ _=${YMAX:=6000}
 # Individual visualizations
 for TERMS in `seq 1 $MAXTERMS`; do
     echo "- Processing queries with $TERMS terms"
-    if [ -s "search.${TERMS}" ]; then
-        cat "search.${TERMS}" | sed 's/.*QTime..\([0-9]*\).*numFound..\([0-9]*\).*/\2 \1/' | grep "[0-9]\+ [1-9][0-9]*" > "search.${TERMS}.not0"
+    if [ -s "search.${TERMS}.gz" ]; then
+        zcat "search.${TERMS}.gz" | sed 's/.*QTime..\([0-9]*\).*numFound..\([0-9]*\).*/\2 \1/' | grep "[0-9]\+ [1-9][0-9]*" > "search.${TERMS}.not0"
     elif [ -s "search.${TERMS}.not0" ]; then
         echo "The raw Solr responses search.${TERMS} does not exist, but search.${TERMS}.not0 already exists"
     else

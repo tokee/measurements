@@ -60,6 +60,7 @@ for TERMS in `seq 1 $MAXTERMS`; do
             break
         fi
     done < $QUERIES
+    gzip "$DEST/search.${TERMS}"
 done
 if [ -s performance.conf ]; then
     cp performance.conf $DEST
