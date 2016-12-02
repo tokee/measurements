@@ -43,17 +43,24 @@ for Z in `seq 1 $ZOOS`; do
         >&2 echo "Please run ./cloud_install.sh $VERSION"
         exit 4
     fi
+    echo "calling> zoo$Z/bin/zkServer.sh start"
     zoo$Z/bin/zkServer.sh start
 done
 
+if [ ! "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $VERSION \"`" ]; then
+    SOLR_HOME_SUB=server/solr/
+else
+    SOLR_HOME_SUB=example/solr/
+fi
 SOLR_PORT=$SOLR_BASE_PORT
 for S in `seq 1 $SOLRS`; do
     if [ ! -d solr$S ]; then
         >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
     fi
-    solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/server/solr/ -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST
-    SOLR_PORT=$(( SOLR_PORT + 1 ))
+    echo "calling> solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST"
+    solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST
+    SOLR_PORT=$(( SOLR_PORT + 10 ))
 done
 
 popd > /dev/null # cloud/$VERSION

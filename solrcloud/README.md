@@ -6,8 +6,6 @@
    Installs a SolrCloud with the given version
  * cloud_start.sh VERSION
    Starts ZooKeepers and Solrs for the given version
- * cloud_warm.sh
-   Performs warm-up of the running Solrcloud
  * cloud_stop.sh
    Stops any running SolrCloud
  * drop_cache.sh
@@ -17,7 +15,3 @@
    sudo chown root.root drop_cache.sh
    sudo chmod 4755 drop_cache.sh
    ```
-
-
-## Notes to self
- * What about Java versions? Maybe use tomcat 8 for Solr 4?
