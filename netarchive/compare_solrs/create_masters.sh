@@ -40,20 +40,32 @@ copy_shard() {
 setup_cloud() {
     echo " - Setting up SolrCloud $VERSION"
     if [ ! -d $WORK/index ]; then
-        >&2 echo "No shard index data available at $WORK/index"
+        >&2 echo "Error: No shard index data available at $WORK/index"
         exit 4
     fi
     if [ ! -d $WORK/conf ]; then
-        >&2 echo "No Solr config available at $WORK/conf"
+        >&2 echo "Error: No Solr config available at $WORK/conf"
         exit 5
     fi
-    
+    if [ -d $WORK/solr ]; then
+        >&2 echo "Error: Solr work folder $WORK/solr already exists"
+        exit 7
+    fi
+
+    # Newly created shards should reside in the work folder
     pushd ../../solrcloud/ > /dev/null
     SOLRS=1 ./cloud_install.sh $VERSION
+    mv cloud/$VERSION/solr1/example/solr $WORK/solr
+    pushd cloud/$VERSION/solr1/example/ > /dev/null
+    ln -s $WORK/solr solr
+    popd > /dev/null # example
+    
+    # Start up Solr and create an empty collection
     SOLRS=1 ./cloud_start.sh $VERSION
     SHARDS=1 REPLICAS=1 ./cloud_sync.sh 4.10.4-sparse $WORK/conf/ cremas_conf cremas
     ./cloud_stop.sh $VERSION
-    
+
+    # Link the shard data into Solr
     # TODO: Test with Solr 5+
     pushd cloud/$VERSION/solr1/example/solr/cremas_shard1_replica1/data > /dev/null
     rm -r index
@@ -120,19 +132,20 @@ create_master() {
     cp -r "$WORK/index" "$END/1/1/"
 }
 
-# TODO: Control where SolrCloud is installed
 # Input: EXISTING_SHARDS
 split_shards() {
     local EXISTING="$1"
     local TARGET=$(( EXISTING * 2 ))
     echo " - Splitting $EXISTING shards into $TARGET"
     for E in `seq 1 $EXISTING`; do
+        # TODO: Figure out the naming of the new shards
         local SPLIT="http://$SOLR/solr/admin/collection=cremas&shard=cremas_shard${EXISTING}_replica1&action=SPLITSHARD"
         echo "curl> $SPLIT"
         curl "$SPLIT"
     done
     echo " - Storing $TARGET shards"
     for D in `seq 1 $TARGET`; do
+        echo "   - Storing shard $D/$TARGET"
         mkdir -p "$END/$TARGET/$D/"
         cp -r "../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shardUNKNOWN1_replica1/data/index" "$END/$TARGET/$D/"
     done
