@@ -132,6 +132,7 @@ create_master() {
     cp -r "$WORK/index" "$END/1/1/"
 }
 
+# TODO: Make this work multiple times
 # Input: EXISTING_SHARDS
 split_shards() {
     local EXISTING="$1"
@@ -143,11 +144,10 @@ split_shards() {
         echo "curl> $SPLIT"
         curl "$SPLIT"
     done
-    echo " - Storing $TARGET shards"
     for D in `seq 1 $TARGET`; do
-        echo "   - Storing shard $D/$TARGET"
+        echo " - Storing shard $D/$TARGET"
         mkdir -p "$END/$TARGET/$D/"
-        cp -r "../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shardUNKNOWN1_replica1/data/index" "$END/$TARGET/$D/"
+        cp -r "../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shard${EXISTING}_${D}_replica1/data/index" "$END/$TARGET/$D/"
     done
 }
 
@@ -157,7 +157,6 @@ echo "Start `date`"
 #setup_cloud
 #create_master
 #split_shards 1
-#split_shards 2
 
 echo "Done `date`"
 

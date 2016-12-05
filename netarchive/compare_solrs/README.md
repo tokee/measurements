@@ -13,7 +13,7 @@ This project tages one single shard and constructs smaller test-shards from that
 For each version, the test-suite ../netarchive_performance is used to perform test simulating researcher use of the danish net archive. The test should probe
 
 * SSD vs. spinning drives
- * Single shard vs. two shards vs. 4 shards
+ * Single shard vs. distributed (2 shards)
  * Single segment vs. multi-segment
  * Faceting on/off
 
