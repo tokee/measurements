@@ -1,7 +1,7 @@
 ## Introduction
 We need to test the performance difference between Solr versions for Netarchive Search at Statsbiblioteket. Our shards are ~900GB in size and currently (2016-11-25) we do not have multi-TB of undisturbed SSDs set aside for testing.
 
-This project tages one single shard and constructs one ~200GB shard as well as two ~100GB shards, which are then converted to different Lucene/Solr index versions. The aim is to test
+This project tages one single shard and constructs smaller test-shards from that, which are then converted to different Lucene/Solr index versions. The aim is to test
 
  1.1 Solr 4.10 sparse (the current implementation)
  1.2 Solr 4.10
@@ -13,10 +13,9 @@ This project tages one single shard and constructs one ~200GB shard as well as t
 For each version, the test-suite ../netarchive_performance is used to perform test simulating researcher use of the danish net archive. The test should probe
 
 * SSD vs. spinning drives
- * Single 200GB shard vs. two 100GB shards
+ * Single shard vs. two shards vs. 4 shards
  * Single segment vs. multi-segment
  * Faceting on/off
- * Sparse vs. vanilla Solr faceting
 
 ## Goals
  1. Fully automated construction of test-shards
