@@ -8,11 +8,14 @@
 #
 
 pushd $(dirname "$0") > /dev/null
-source ../../solrcloud/general.conf
 source compare.conf
+source ../../solrcloud/general.conf
 
 SOURCE="$1"
 CONF="$2"
+_=${MULTI_SHARDS:=2}
+_=${SOLR_BASE_PORT:=9000}
+_=${SOLR:="$HOST:$SOLR_BASE_PORT"}
 
 if [ "." == ".$SOURCE" -o "." == ".CONF" ]; then
     echo "Usage:  ./create_masters source conf"
@@ -23,7 +26,8 @@ fi
 WORK=$MASTER_DEST/work
 END=$MASTER_DEST/$VERSION
 
-if [ -d "$END" ]; then
+# ###
+if [ ! -d "$END" ]; then
     echo "Skipping master creation as data are already present in $END"
     exit
 fi
@@ -33,10 +37,27 @@ mkdir -p $WORK
 
 copy_shard() {
     echo " - Copying source data from $SOURCE to $WORK"
-    # ###
-    #scp -r $SOURCE $WORK
-    #scp -rq $CONF $WORK
+    scp -r $SOURCE $WORK
+    scp -rq $CONF $WORK
 }
+
+# Performs a test search and exits if the cloud is not available
+# If success, the number of documents in the index is returned
+# Input (optional) query
+verify_cloud() {
+    LSEQ:="$2"
+    _${LSEQ:="*:*"}
+    local SEARCH_URL="http://$SOLR/solr/cremas/select?fl=hash&q=$LSEQ"
+    echo "curl> $SEARCH_URL"
+    HITS=`curl -s "$SEARCH_URL" | grep -o "numFound=.[0-9]*" | grep -o "[0-9]*"`
+    if [ "$HITS" -gt 0 ]; then
+        echo $HITS
+        return
+    fi
+    >&2 echo "Error: Unable to get hits for query '$LSEQ'"
+    exit 10
+}
+
 setup_cloud() {
     echo " - Setting up SolrCloud $VERSION"
     if [ ! -d $WORK/index ]; then
@@ -84,9 +105,6 @@ reduce_shard() {
     local DEL_PRES=$1
     local REM_HITS=$2
 
-    _=${SOLR_BASE_PORT:=9000}
-    _=${SOLR:="$HOST:$SOLR_BASE_PORT"}
-
     echo " - Reducing shard by removing documents with hash prefixes $DEL_PRES"
     local SEARCHQ=$( echo "$DEL_PRES" | sed -e 's/\(.\)/hash:sha1\\:\1*+OR+/g' -e 's/+OR+$//' )
     SEARCH_URL="http://$SOLR/solr/cremas/select?fl=hash&q=$SEARCHQ"
@@ -116,6 +134,7 @@ optimize() {
     _=${SOLR_BASE_PORT:=9000}
     _=${SOLR:="$HOST:$SOLR_BASE_PORT"}
 
+    # Took about 6 hours for 900GB -> 240GB on 7200 RPM
     echo " - Optimizing shard (this can take hours)"
     echo "  - Before optimize: `du -BG $WORK/index`"
     local OPTIMIZE="http://$SOLR/solr/cremas/update/?optimize=true&waitFlush=true&maxSegments=1"
@@ -124,31 +143,59 @@ optimize() {
 }
 
 create_master() {
-    echo " - Creating master shard"
+    echo " - Reducing master shard to ~240GB"
     reduce_shard IJKLMNOPQRSTUVWXYZ234567 150000000 # Leaves ABCDEFGH
+    echo " - Optimizing master shard"
     optimize
-    echo " - Storing shard data"
+
+    echo " - Copying master shard data to $END/1/1/"
     mkdir -p "$END/1/1/"
     cp -r "$WORK/index" "$END/1/1/"
+    rm "$END/1/1/write.lock"
+    cp -r "$WORK/conf" "$END/"
 }
 
-# TODO: Make this work multiple times
-# Input: EXISTING_SHARDS
-split_shards() {
-    local EXISTING="$1"
-    local TARGET=$(( EXISTING * 2 ))
-    echo " - Splitting $EXISTING shards into $TARGET"
-    for E in `seq 1 $EXISTING`; do
-        # TODO: Figure out the naming of the new shards
-        local SPLIT="http://$SOLR/solr/admin/collection=cremas&shard=cremas_shard${EXISTING}_replica1&action=SPLITSHARD"
-        echo "curl> $SPLIT"
-        curl "$SPLIT"
-    done
+store_shards() {
+    local TARGET=$1
+    _=${TARGET:=2}
+    
     for D in `seq 1 $TARGET`; do
         echo " - Storing shard $D/$TARGET"
+        local SI=$(( TARGET - 1))
+        local S="../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shard1_${SI}_replica1/data/index"
+        if [ ! -d "$S" ]; then
+            >&2 echo "Error: Source for generated shard $D not found: $S"
+            exit 9
+        fi
+        if [ -d "$END/$TARGET/$D/" ]; then
+            echo "Destination for generated shard $D already present: $END/$TARGET/$D/"
+            continue
+        fi
         mkdir -p "$END/$TARGET/$D/"
-        cp -r "../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shard${EXISTING}_${D}_replica1/data/index" "$END/$TARGET/$D/"
+        cp -r "$S" "$END/$TARGET/$D/"
+        rm "$END/$TARGET/$D/write.lock"
+        cp -r "$WORK/conf" "$END/"
     done
+
+    }
+
+# Input: (optional) target shards
+split_master() {
+    local TARGET=$1
+    _=${TARGET:=2}
+    if [ $TARGET -lt 2 ]; then
+        >&2 echo "Splitting master shards into $TARGET shards does not make sense"
+        exit 8
+    fi
+    
+    echo " - Splitting master shard into $TARGET"
+    verify_cloud
+    local SPLIT="http://$SOLR/solr/admin/collections?action=SPLITSHARD&collection=cremas&shard=shard1"
+    echo "curl> $SPLIT"
+    # TODO: Problem: The splitshard command times out but continue in the background
+    # Busy-waiting for the splits is one way of handling this
+    curl "$SPLIT"
+    store_shards $TARGET
 }
 
 echo "Start `date`"
@@ -156,7 +203,8 @@ echo "Start `date`"
 #copy_shard
 #setup_cloud
 #create_master
-#split_shards 1
+#split_master $MULTI_SHARDS
+store_shards
 
 echo "Done `date`"
 
