@@ -6,6 +6,9 @@
 
 pushd $(dirname "$0") > /dev/null
 source general.conf
+SHOME=`pwd`
+_=${CACHE:=`pwd`/cache}
+_=${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_install.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
@@ -19,10 +22,10 @@ fi
 
 # Input: Package
 function check_package() {
-    if [ ! -s cache/$1 ]; then
+    if [ ! -s ${CACHE}/$1 ]; then
         echo "Activating get_solr.sh as package $1 is not available"
-        ./get_solr.sh
-        if [ ! -s cache/$1 ]; then
+        $SHOME/get_solr.sh
+        if [ ! -s ${CACHE}/$1 ]; then
             >&2 "Error: Package $P not available after call to get_solr.sh"
             exit 2
         fi
@@ -33,13 +36,13 @@ function zoo() {
     local ZPACK="$1"
     local FOLDER=`echo $ZPACK | sed -e 's/.gz$//' -e 's/.tar$//' -e 's/.tgz//'`
     echo "  - Installing ZooKeeper ensemble of size $ZOOS"
-    tar -xzovf ../../cache/$ZPACK > /dev/null
     local ZPORT=$ZOO_BASE_PORT
     
     for Z in `seq 1 $ZOOS`; do
         if [ ! -d zoo$Z ]; then
             echo "     - Copying ZooKeeper files for instance $Z"
-            cp -r $FOLDER zoo$Z
+            tar -xzovf ${CACHE}/$ZPACK > /dev/null
+            mv $FOLDER zoo$Z
         else
             echo "   - ZooKeeper files for instance $Z already exists"
         fi
@@ -59,7 +62,7 @@ function solr() {
     local SPACK="$1"
     local FOLDER=`echo $SPACK | sed -e 's/[.]gz$//' -e 's/[.]tar$//' -e 's/[.]tgz//'`
     echo "  - Installing $SOLRS Solrs"
-    tar -xzovf ../../cache/$SPACK > /dev/null
+    tar -xzovf  ${CACHE}/$SPACK > /dev/null
     if [ solr-* != $FOLDER ]; then
         mv solr-* $FOLDER
     fi
@@ -69,7 +72,7 @@ function solr() {
         pushd $FOLDER/example/webapps/ > /dev/null
         if [ ! "." == ".$SPARSE_WAR" ]; then
             echo "     - Using sparse Solr WAR as Solr $VERSION"
-            cp ../../../../../cache/$SPARSE_WAR solr.war
+            cp  ${CACHE}/$SPARSE_WAR solr.war
         fi
         mkdir -p WEB-INF/lib/
         cp ../../dist/solr-analysis-extras-*.jar WEB-INF/lib/
@@ -104,9 +107,9 @@ function install() {
     local VERSION="$1"
 
     # Shared setup
-    mkdir -p cloud
+    mkdir -p ${CLOUD}
     DEST=$VERSION
-    if [ -d cloud/$DEST ]; then
+    if [ -d ${CLOUD}/$DEST ]; then
         echo "Solr $DEST already installed"
         return
     fi
@@ -120,15 +123,15 @@ function install() {
     check_package $SPACK
     check_package $ZPACK
     echo "  - Source packages: $SPACK and $ZPACK"
-    mkdir -p cloud/$DEST
-    pushd cloud/$DEST > /dev/null
+    mkdir -p ${CLOUD}/$DEST
+    pushd ${CLOUD}/$DEST > /dev/null
     zoo $ZPACK
 
     # Version specific parts
     
     if [ ! "." == ".`echo \" 4.10.4-sparse 4.10.4 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
         solr $SPACK
-        popd > /dev/null # cloud/$DEST
+        popd > /dev/null # ${CLOUD}/$DEST
         return
     fi
 
