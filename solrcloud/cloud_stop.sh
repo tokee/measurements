@@ -9,6 +9,8 @@
 pushd $(dirname "$0") > /dev/null
 source general.conf
 
+_=${CLOUD:=`pwd`/cloud}
+
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
     echo ""
@@ -25,13 +27,13 @@ if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
     >&2 echo "The Solr version $VERSION is unsupported"
     usage 1
 fi
-if [ ! -d cloud/$VERSION ]; then
+if [ ! -d ${CLOUD}/$VERSION ]; then
     >&2 echo "The Solr version $VERSION is not installed."
     >&2 echo "Please run ./install_cloud.sh $VERSION"
     exit 3
 fi
 
-pushd cloud/$VERSION > /dev/null
+pushd ${CLOUD}/$VERSION > /dev/null
 
 
 SOLR_PORT=$SOLR_BASE_PORT
@@ -53,6 +55,6 @@ for Z in `seq 1 $ZOOS`; do
     zoo$Z/bin/zkServer.sh stop
 done
 
-popd > /dev/null # cloud/$VERSION
+popd > /dev/null # ${CLOUD}/$VERSION
 
 popd > /dev/null # pwd

@@ -7,6 +7,7 @@ set -e
 
 pushd $(dirname "$0") > /dev/null
 source general.conf
+_=${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_sync.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`> <config_folder> <config_id> [collection]"
@@ -28,13 +29,13 @@ if [ ! -d $CONFIG_FOLDEr ]; then
     >&2 echo "The config folder '$CONFIG_FOLDER' does not exist"
     usage 2
 fi
-if [ ! -d cloud/$VERSION ]; then
+if [ ! -d ${CLOUD}/$VERSION ]; then
     >&2 echo "No cloud present. Please install and start a cloud first with"
     >&2 echo "./cloud_install.sh $VERSION"
     >&2 echo "./cloud_start.sh $VERSION"
     exit 3
 fi
-pushd cloud/$VERSION > /dev/null
+pushd ${CLOUD}/$VERSION > /dev/null
 
 if [ "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
     _=${SOLR_SCRIPTS:="solr1/example/scripts/cloud-scripts"}

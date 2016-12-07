@@ -6,11 +6,12 @@
 
 pushd $(dirname "$0") > /dev/null
 source general.conf
+_=${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
     echo ""
-    echo "Installed SolrClouds: `ls cloud | tr '\n' ' '`"
+    echo "Installed SolrClouds: `ls ${CLOUD} | tr '\n' ' '`"
     exit $1
 }
 
@@ -23,10 +24,10 @@ if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
     >&2 echo "The Solr version $VERSION is unsupported"
     usage 1
 fi
-if [ ! -d cloud/$VERSION ]; then
+if [ ! -d ${CLOUD}/$VERSION ]; then
     echo "Attempting install of missing SolrCloud version $VERSION"
     ./cloud_install.sh $VERSION
-    if [ ! -d cloud/$VERSION ]; then
+    if [ ! -d ${CLOUD}/$VERSION ]; then
         >&2 echo "Unable to install Solr version $VERSION"
         >&2 echo "Please run ./cloud_install.sh $VERSION manually and inspect the errors"
         exit 3
@@ -35,7 +36,7 @@ if [ ! -d cloud/$VERSION ]; then
     fi
 fi
 
-pushd cloud/$VERSION > /dev/null
+pushd ${CLOUD}/$VERSION > /dev/null
 
 for Z in `seq 1 $ZOOS`; do
     if [ ! -d zoo$Z ]; then
@@ -63,6 +64,6 @@ for S in `seq 1 $SOLRS`; do
     SOLR_PORT=$(( SOLR_PORT + 10 ))
 done
 
-popd > /dev/null # cloud/$VERSION
+popd > /dev/null # ${CLOUD}/$VERSION
 
 popd > /dev/null # pwd
