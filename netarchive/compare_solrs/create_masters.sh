@@ -7,15 +7,16 @@
 # The result is stored at the stated designation and the Solr installation is shut down.
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source compare.conf
 source ../../solrcloud/general.conf
+source cloud_control.sh
 
 SOURCE="$1"
 CONF="$2"
-_=${MULTI_SHARDS:=2}
-_=${SOLR_BASE_PORT:=9000}
-_=${SOLR:="$HOST:$SOLR_BASE_PORT"}
+: ${MULTI_SHARDS:=2}
+: ${SOLR_BASE_PORT:=9000}
+: ${SOLR:="$HOST:$SOLR_BASE_PORT"}
 
 if [ "." == ".$SOURCE" -o "." == ".CONF" ]; then
     echo "Usage:  ./create_masters source conf"
@@ -39,23 +40,6 @@ copy_shard() {
     echo " - Copying source data from $SOURCE to $WORK"
     scp -r $SOURCE $WORK
     scp -rq $CONF $WORK
-}
-
-# Performs a test search and exits if the cloud is not available
-# If success, the number of documents in the index is returned
-# Input (optional) query
-verify_cloud() {
-    LSEQ:="$2"
-    _${LSEQ:="*:*"}
-    local SEARCH_URL="http://$SOLR/solr/cremas/select?fl=hash&q=$LSEQ"
-    echo "curl> $SEARCH_URL"
-    HITS=`curl -s "$SEARCH_URL" | grep -o "numFound=.[0-9]*" | grep -o "[0-9]*"`
-    if [ "$HITS" -gt 0 ]; then
-        echo $HITS
-        return
-    fi
-    >&2 echo "Error: Unable to get hits for query '$LSEQ'"
-    exit 10
 }
 
 setup_cloud() {
@@ -82,9 +66,9 @@ setup_cloud() {
     popd > /dev/null # example
     
     # Start up Solr and create an empty collection
-    SOLRS=1 ./cloud_start.sh $VERSION
+    ( . ./cloud_start.sh $VERSION )
     SHARDS=1 REPLICAS=1 ./cloud_sync.sh 4.10.4-sparse $WORK/conf/ cremas_conf cremas
-    ./cloud_stop.sh $VERSION
+    ( . ./cloud_stop.sh $VERSION )
 
     # Link the shard data into Solr
     # TODO: Test with Solr 5+
@@ -131,8 +115,8 @@ reduce_shard() {
 }
 
 optimize() {
-    _=${SOLR_BASE_PORT:=9000}
-    _=${SOLR:="$HOST:$SOLR_BASE_PORT"}
+    : ${SOLR_BASE_PORT:=9000}
+    : ${SOLR:="$HOST:$SOLR_BASE_PORT"}
 
     # Took about 6 hours for 900GB -> 240GB on 7200 RPM
     echo " - Optimizing shard (this can take hours)"
@@ -157,7 +141,7 @@ create_master() {
 
 store_shards() {
     local TARGET=$1
-    _=${TARGET:=2}
+    : ${TARGET:=2}
     
     for D in `seq 1 $TARGET`; do
         echo " - Storing shard $D/$TARGET"
@@ -182,7 +166,7 @@ store_shards() {
 # Input: (optional) target shards
 split_master() {
     local TARGET=$1
-    _=${TARGET:=2}
+    : ${TARGET:=2}
     if [ $TARGET -lt 2 ]; then
         >&2 echo "Splitting master shards into $TARGET shards does not make sense"
         exit 8
