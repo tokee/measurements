@@ -4,11 +4,11 @@
 # Installs a specific SolrCloud
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 SHOME=`pwd`
-_=${CACHE:=`pwd`/cache}
-_=${CLOUD:=`pwd`/cloud}
+: ${CACHE:=`pwd`/cache}
+: ${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_install.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"

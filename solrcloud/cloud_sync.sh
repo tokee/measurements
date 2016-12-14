@@ -5,9 +5,9 @@ set -e
 # Uploads configurations and creates collections in SolrCloud
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
-_=${CLOUD:=`pwd`/cloud}
+: ${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_sync.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`> <config_folder> <config_id> [collection]"
@@ -37,23 +37,27 @@ if [ ! -d ${CLOUD}/$VERSION ]; then
 fi
 pushd ${CLOUD}/$VERSION > /dev/null
 
-if [ "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
-    _=${SOLR_SCRIPTS:="solr1/example/scripts/cloud-scripts"}
+if [ "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $VERSION \"`" ]; then
+    : ${SOLR_SCRIPTS:="solr1/example/scripts/cloud-scripts"}
 else
-    _=${SOLR_SCRIPTS:="solr1/server/scripts/cloud-scripts"}
+    : ${SOLR_SCRIPTS:="solr1/server/scripts/cloud-scripts"}
+fi
+if [ ! -d $SOLR_SCRIPTS ]; then
+    >&2 echo "Error: The Solr script folder '$SOLR_SCRIPTS' is not visible from `pwd`"
+    exit 13
 fi
 
 # Resolve default
-_=${HOST:=`hostname`}
-_=${ZOO_BASE_PORT:=2181}
-_=${ZOOKEEPER:="$HOST:$ZOO_BASE_PORT"}
+: ${HOST:=`hostname`}
+: ${ZOO_BASE_PORT:=2181}
+: ${ZOOKEEPER:="$HOST:$ZOO_BASE_PORT"}
 
-_=${SOLR_BASE_PORT:=9000}
-_=${SOLR:="$HOST:$SOLR_BASE_PORT"}
-_=${SHARDS:=1}
-_=${REPLICAS:=1}
+: ${SOLR_BASE_PORT:=9000}
+: ${SOLR:="$HOST:$SOLR_BASE_PORT"}
+: ${SHARDS:=1}
+: ${REPLICAS:=1}
 
-_=${CONFIG_FOLDER:="config/solr/conf"}
+: ${CONFIG_FOLDER:="config/solr/conf"}
 
 
 # Upload the config if it is not already in the cloud

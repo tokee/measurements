@@ -4,7 +4,7 @@
 # Downloads and prepares Solr and ZooKeeper for later install
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 
 

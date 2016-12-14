@@ -4,9 +4,9 @@
 # Starts a specific SolrCloud
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
-_=${CLOUD:=`pwd`/cloud}
+: ${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"

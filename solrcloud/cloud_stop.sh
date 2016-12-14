@@ -6,10 +6,10 @@
 # TODO: Figure out which cloud is running and stop it, so that version need not be specified
 #
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 
-_=${CLOUD:=`pwd`/cloud}
+: ${CLOUD:=`pwd`/cloud}
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
