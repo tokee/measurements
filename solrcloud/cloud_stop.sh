@@ -41,6 +41,7 @@ for S in `seq 1 $SOLRS`; do
     if [ ! -d solr$S ]; then
         >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
+        return
     fi
     solr$S/bin/solr stop -p $SOLR_PORT
     SOLR_PORT=$(( SOLR_PORT + 10 ))
@@ -51,6 +52,7 @@ for Z in `seq 1 $ZOOS`; do
     if [ ! -d zoo$Z ]; then
         >&2 echo "Expected a ZooKeeper-instalation at `pwd`/zoo$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
+        return
     fi
     zoo$Z/bin/zkServer.sh stop
 done
