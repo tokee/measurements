@@ -42,7 +42,7 @@ for Z in `seq 1 $ZOOS`; do
     if [ ! -d zoo$Z ]; then
         >&2 echo "Expected a ZooKeeper-instalation at `pwd`/zoo$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
-        exit 4
+        continue
     fi
     echo "calling> zoo$Z/bin/zkServer.sh start"
     zoo$Z/bin/zkServer.sh start
@@ -58,6 +58,7 @@ for S in `seq 1 $SOLRS`; do
     if [ ! -d solr$S ]; then
         >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
+        continue
     fi
     echo "calling> solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST"
     solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST
