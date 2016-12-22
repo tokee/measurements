@@ -30,7 +30,7 @@ if [ ! -d $CONFIG_FOLDEr ]; then
     usage 2
 fi
 if [ ! -d ${CLOUD}/$VERSION ]; then
-    >&2 echo "No cloud present. Please install and start a cloud first with"
+    >&2 echo "No cloud present at ${CLOUD}/${VERSION}. Please install and start a cloud first with"
     >&2 echo "./cloud_install.sh $VERSION"
     >&2 echo "./cloud_start.sh $VERSION"
     exit 3
