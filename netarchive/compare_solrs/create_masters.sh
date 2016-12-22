@@ -27,19 +27,22 @@ fi
 WORK=$MASTER_DEST/work
 END=$MASTER_DEST/$VERSION
 
-# ###
-if [ ! -d "$END" ]; then
-    echo "Skipping master creation as data are already present in $END"
-    exit
-fi
-
-echo "Producing test-shards in $END"
-mkdir -p $WORK
+function check_existing() {
+    if [ -d "$END" ]; then
+        echo "Skipping master creation as data are already present in $END"
+        exit
+    fi
+}
 
 copy_shard() {
-    echo " - Copying source data from $SOURCE to $WORK"
-    scp -r $SOURCE $WORK
-    scp -rq $CONF $WORK
+    if [ ! -d "$WORK/index" ]; then
+        echo " - Copying index data from $SOURCE to $WORK"
+        scp -r $SOURCE $WORK
+    fi
+    if [ ! -d "$WORK/conf" ]; then
+        echo " - Copying conf data from $SOURCE to $WORK"
+        scp -rq $CONF $WORK
+    fi
 }
 
 setup_cloud() {
@@ -52,32 +55,32 @@ setup_cloud() {
         >&2 echo "Error: No Solr config available at $WORK/conf"
         exit 5
     fi
-    if [ -d $WORK/solr ]; then
-        >&2 echo "Error: Solr work folder $WORK/solr already exists"
+    if [ -d $CLOUD/$VERSION ]; then
+        >&2 echo "Error: Solr work folder $CLOUD/$VERSION already exists"
         exit 7
     fi
 
-    # Newly created shards should reside in the work folder
     pushd ../../solrcloud/ > /dev/null
-    SOLRS=1 ./cloud_install.sh $VERSION
-    mv cloud/$VERSION/solr1/example/solr $WORK/solr
-    pushd cloud/$VERSION/solr1/example/ > /dev/null
-    ln -s $WORK/solr solr
-    popd > /dev/null # example
+    SOLRS=1
+    ( . ./cloud_install.sh $VERSION )
     
     # Start up Solr and create an empty collection
     ( . ./cloud_start.sh $VERSION )
-    SHARDS=1 REPLICAS=1 ./cloud_sync.sh 4.10.4-sparse $WORK/conf/ cremas_conf cremas
+    SHARDS=1
+    REPLICAS=1
+    ( . ./cloud_sync.sh $VERSION $WORK/conf/ cremas_conf cremas )
     ( . ./cloud_stop.sh $VERSION )
 
     # Link the shard data into Solr
     # TODO: Test with Solr 5+
-    pushd cloud/$VERSION/solr1/example/solr/cremas_shard1_replica1/data > /dev/null
+    pushd $CLOUD/$VERSION/solr1/example/solr/cremas_shard1_replica1/data > /dev/null
     rm -r index
-    ln -s $WORK/index index
+    ln -s $WORK/index .
     popd > /dev/null # data
     
-    SOLRS=1 SOLR_MEM=$MASTER_SOLR_MEM ./cloud_start.sh $VERSION
+    SOLRS=1
+    SOLR_MEM=$MASTER_SOLR_MEM
+    ( . ./cloud_start.sh $VERSION )
     popd > /dev/null # solrcloud
 }
 
@@ -95,11 +98,11 @@ reduce_shard() {
 
     echo "Performing test query"
     echo "curl> $SEARCH_URL"
-    HITS=`curl -s "$SEARCH_URL" | grep -o "numFound=.[0-9]*" | grep -o "[0-9]*"`
+    HITS=`verify_cloud`
     # TODO: Less hardcoding!
     if [ "$HITS" -lt $REM_HITS ]; then
         >&2 echo "Error: Expected at least $REM_HITS hits from test query, but got only $HITS. Perhaps the index is already reduced?"
-        exit 7
+        return
     fi
 
     # curl http://46.231.77.98:7979/solr/update/?commit=true -H "Content-Type: text/xml" -d "<delete>(cartype:stationwagon)AND(color:blue)</delete>"
@@ -108,60 +111,55 @@ reduce_shard() {
     # There seems to be a problem with : together with OR, so we iterate instead
     for BAS in `echo $DEL_PRES | sed 's/\(.\)/\1 /g'`; do
         echo $BAS
+        # ###
         DELXML="<delete><query>hash:sha1\:${BAS}*</query></delete>"
         echo "exec> curl $DEL_URL -H \"Content-Type: text/xml\" -d \"$DELXML\""
         curl $DEL_URL -H "Content-Type: text/xml" -d "$DELXML"
     done
-}
-
-optimize() {
-    : ${SOLR_BASE_PORT:=9000}
-    : ${SOLR:="$HOST:$SOLR_BASE_PORT"}
-
-    # Took about 6 hours for 900GB -> 240GB on 7200 RPM
-    echo " - Optimizing shard (this can take hours)"
-    echo "  - Before optimize: `du -BG $WORK/index`"
-    local OPTIMIZE="http://$SOLR/solr/cremas/update/?optimize=true&waitFlush=true&maxSegments=1"
-    curl "$OPTIMIZE"
-    echo "  - After optimize: `du -BG $WORK/index`"
-}
-
-create_master() {
-    echo " - Reducing master shard to ~240GB"
-    reduce_shard IJKLMNOPQRSTUVWXYZ234567 150000000 # Leaves ABCDEFGH
-    echo " - Optimizing master shard"
-    optimize
-
-    echo " - Copying master shard data to $END/1/1/"
-    mkdir -p "$END/1/1/"
-    cp -r "$WORK/index" "$END/1/1/"
-    rm "$END/1/1/write.lock"
-    cp -r "$WORK/conf" "$END/"
+    local AHITS=`verify_cloud`
+    echo "Finished reducing collection. Hits down to $AHITS from $HITS"
 }
 
 store_shards() {
     local TARGET=$1
     : ${TARGET:=2}
     
+    if [ ! -d $END/conf ]; then
+        cp -r "$WORK/conf" "$END/"
+    fi
+    if [ -d "$END/$TARGET/" ]; then
+        echo "Warning: Storing $TARGET shards might fail as destination $END/$TARGET/ already exists"
+    fi
+    
     for D in `seq 1 $TARGET`; do
         echo " - Storing shard $D/$TARGET"
-        local SI=$(( TARGET - 1))
-        local S="../../solrcloud/cloud/$VERSION/solr1/example/solr/cremas_shard1_${SI}_replica1/data/index"
+        local SI=$(( D - 1))
+        if [ "$TARGET" -eq 1 ]; then
+            local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard$1_replica1"
+        else
+                local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard1_${SI}_replica1"
+        fi
+        
         if [ ! -d "$S" ]; then
             >&2 echo "Error: Source for generated shard $D not found: $S"
             exit 9
         fi
-        if [ -d "$END/$TARGET/$D/" ]; then
-            echo "Destination for generated shard $D already present: $END/$TARGET/$D/"
-            continue
-        fi
-        mkdir -p "$END/$TARGET/$D/"
-        cp -r "$S" "$END/$TARGET/$D/"
-        rm "$END/$TARGET/$D/write.lock"
-        cp -r "$WORK/conf" "$END/"
+        mkdir -p "$END/$TARGET/"
+        cp -r "$S" "$END/$TARGET/"
+        rm $END/$TARGET/*/data/index/write.lock
     done
 
-    }
+}
+
+create_master() {
+    echo " - Reducing master shard to ~240GB"
+    reduce_shard IJKLMNOPQRSTUVWXYZ234567 $RAW_MIN_DOCS # Leaves ABCDEFGH
+    echo " - Optimizing master shard"
+    optimize
+
+    store_shards 1
+}
+
 
 # Input: (optional) target shards
 split_master() {
@@ -184,11 +182,13 @@ split_master() {
 
 echo "Start `date`"
 
-#copy_shard
-#setup_cloud
-#create_master
-#split_master $MULTI_SHARDS
-store_shards
+check_existing
+echo "Producing test-shards in $END"
+mkdir -p $WORK
+
+copy_shard
+setup_cloud
+create_master
+split_master $MULTI_SHARDS
 
 echo "Done `date`"
-

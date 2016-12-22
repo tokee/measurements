@@ -10,6 +10,18 @@ source ../../solrcloud/general.conf
 
 CC=../../solrcloud
 
+optimize() {
+    : ${SOLR_BASE_PORT:=9000}
+    : ${SOLR:="$HOST:$SOLR_BASE_PORT"}
+
+    # Took about 6 hours for 900GB -> 240GB on 7200 RPM
+    echo " - Optimizing collection cremas (this can take hours)"
+    echo "  - Before optimize: `du -BG $WORK/index`"
+    local OPTIMIZE="http://$SOLR/solr/cremas/update/?optimize=true&waitFlush=true&maxSegments=1"
+    curl "$OPTIMIZE"
+    echo "  - After optimize: `du -BG $WORK/index`"
+}
+
 # Performs a test search and exits if the cloud is not available
 # If success, the number of documents in the index is returned
 # Input (optional) query
@@ -18,7 +30,7 @@ verify_cloud() {
     : ${LSEQ:="*:*"}
     : ${SOLR_BASE_PORT:=9000}
     : ${SOLR:="$HOST:$SOLR_BASE_PORT"}
-    local RETRIES=5
+    local RETRIES=20
     local SLEEP=1
     
     local SEARCH_URL="http://$SOLR/solr/cremas/select?rows=0&q=$LSEQ"
@@ -27,15 +39,17 @@ verify_cloud() {
     while [ $ATTEMPT -lt $RETRIES ]; do
         local RES="`curl -s \"$SEARCH_URL\"`"
         if [ ! "." == ".`echo \"$RES\" | grep \"Error 404 Not Found\"`" ]; then
-            >&2 echo "Warning: Got 404. Will sleep $SLEEP then re-try $SEARCH_URL"
+            >&2 echo "   - Warning: Got 404 verifying cloud. Will sleep $SLEEP second then re-try $SEARCH_URL"
             local ATTEMPT=$(( ATTEMPT + 1 ))
             sleep $SLEEP
             continue
         fi
         local HITS=`echo "$RES" | grep -o "numFound=.[0-9]*" | grep -o "[0-9]*"`
-        if [ "$HITS" -ge "0" ]; then
-            echo $HITS
-            return
+        if [ ".$HITS" != "." ]; then
+            if [ "$HITS" -ge "0" ]; then
+                echo $HITS
+                return
+            fi
         fi
     done
     >&2 echo "Error: Unable to get hits for query '$LSEQ' from $SEARCH_URL"
@@ -97,6 +111,6 @@ ready_shards() {
     sleep 1
     verify_cloud
     echo "- Shutting down cloud"
-    ( . $CC/cloud_stop.sh $VERSION )
+    ( . $CC/cloud_stop.sh $SOURCE_VERSION )
 }
 
