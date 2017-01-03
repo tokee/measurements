@@ -37,7 +37,7 @@ verify_cloud() {
     #echo "curl> $SEARCH_URL"
     local ATTEMPT=0
     while [ $ATTEMPT -lt $RETRIES ]; do
-        local RES="`curl -s \"$SEARCH_URL\"`"
+        local RES="`curl -m 5 -s \"$SEARCH_URL\"`"
         if [ ! "." == ".`echo \"$RES\" | grep \"Error 404 Not Found\"`" ]; then
             >&2 echo "   - Warning: Got 404 verifying cloud. Will sleep $SLEEP second then re-try $SEARCH_URL"
             local ATTEMPT=$(( ATTEMPT + 1 ))
@@ -54,6 +54,7 @@ verify_cloud() {
     done
     >&2 echo "Error: Unable to get hits for query '$LSEQ' from $SEARCH_URL"
     >&2 echo "$RES"
+    echo -1
     exit 11
 }
 
@@ -99,7 +100,7 @@ ready_shards() {
     local SHARDS=$2
     : ${SHARDS:=1}
     
-    echo "- Readying SolrCloud $SOURCE_VERSION"
+    echo "- Readying SolrCloud $SOURCE_VERSION at $CLOUD/SOURCE_VERSION"
     fresh_cloud $SOURCE_VERSION
     echo "- Starting SolrCloud"
     ( . $CC/cloud_start.sh $SOURCE_VERSION )
