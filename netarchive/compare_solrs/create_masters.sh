@@ -37,11 +37,13 @@ function check_existing() {
 copy_shard() {
     if [ ! -d "$WORK/index" ]; then
         echo " - Copying index data from $SOURCE to $WORK"
-        scp -r $SOURCE $WORK
+        scp -rL $SOURCE $WORK
+    else
+        echo " - Skilling index data copy from $SOURCE to $WORK as destination already exists"
     fi
     if [ ! -d "$WORK/conf" ]; then
         echo " - Copying conf data from $SOURCE to $WORK"
-        scp -rq $CONF $WORK
+        scp -rqL $CONF $WORK
     fi
 }
 
@@ -73,7 +75,12 @@ setup_cloud() {
 
     # Link the shard data into Solr
     # TODO: Test with Solr 5+
-    pushd $CLOUD/$VERSION/solr1/example/solr/cremas_shard1_replica1/data > /dev/null
+    local SHAONE=$CLOUD/$VERSION/solr1/example/solr/cremas_shard1_replica1
+    if [ ! -d $SHAONE ]; then
+        >&2 echo "Error: Expected folder for master shard not found: $SHAONE"
+        exit 18
+    fi
+    pushd $SHAONE/data > /dev/null
     rm -r index
     ln -s $WORK/index .
     popd > /dev/null # data
@@ -96,9 +103,9 @@ reduce_shard() {
     local SEARCHQ=$( echo "$DEL_PRES" | sed -e 's/\(.\)/hash:sha1\\:\1*+OR+/g' -e 's/+OR+$//' )
     SEARCH_URL="http://$SOLR/solr/cremas/select?fl=hash&q=$SEARCHQ"
 
-    echo "Performing test query"
-    echo "curl> $SEARCH_URL"
-    HITS=`verify_cloud`
+    echo "    - Performing test query"
+    #echo "curl> $SEARCH_URL"
+    HITS=`verify_cloud "$SEARCHQ"`
     # TODO: Less hardcoding!
     if [ "$HITS" -lt $REM_HITS ]; then
         >&2 echo "Error: Expected at least $REM_HITS hits from test query, but got only $HITS. Perhaps the index is already reduced?"
@@ -125,7 +132,11 @@ store_shards() {
     : ${TARGET:=2}
     
     if [ ! -d $END/conf ]; then
-        cp -r "$WORK/conf" "$END/"
+        cp -rL "$WORK/conf" "$END"
+    fi
+    if [ ! -d $END/$TARGET/zoo/data ]; then
+        mkdir -p $END/$TARGET/zoo/
+        cp -rL "$CLOUD/$VERSION/zoo1/data/" "$END/$TARGET/zoo/"
     fi
     if [ -d "$END/$TARGET/" ]; then
         echo "Warning: Storing $TARGET shards might fail as destination $END/$TARGET/ already exists"
@@ -135,9 +146,9 @@ store_shards() {
         echo " - Storing shard $D/$TARGET"
         local SI=$(( D - 1))
         if [ "$TARGET" -eq 1 ]; then
-            local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard$1_replica1"
+            local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard${1}_replica1"
         else
-                local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard1_${SI}_replica1"
+            local S="$CLOUD/$VERSION/solr1/example/solr/cremas_shard1_${SI}_replica1"
         fi
         
         if [ ! -d "$S" ]; then
@@ -145,8 +156,9 @@ store_shards() {
             exit 9
         fi
         mkdir -p "$END/$TARGET/"
-        cp -r "$S" "$END/$TARGET/"
-        rm $END/$TARGET/*/data/index/write.lock
+        cp -rL "$S" "$END/$TARGET/cremas_shard${D}_replica1"
+        sed -i -e "s/shard1_\([0-9]\+\)/shard${D}/" -e "s/core_node[0-9]/core_node${D}/" "$END/$TARGET/cremas_shard${D}_replica1/core.properties"
+        rm -f $END/$TARGET/*/data/index/write.lock
     done
 
 }
@@ -171,12 +183,25 @@ split_master() {
     fi
     
     echo " - Splitting master shard into $TARGET"
-    verify_cloud
+    PRE_SPLIT_HITS=`verify_cloud`
     local SPLIT="http://$SOLR/solr/admin/collections?action=SPLITSHARD&collection=cremas&shard=shard1"
     echo "curl> $SPLIT"
     # TODO: Problem: The splitshard command times out but continue in the background
     # Busy-waiting for the splits is one way of handling this
     curl "$SPLIT"
+    
+    POST_SPLIT_HITS=`verify_cloud`
+    if [ ! $PRE_SPLIT_HITS -eq $POST_SPLIT_HITS ]; then
+        2&> echo "Error: document count before splitting is $PRE_SPLIT_HITS which is the same as after splitting $POST_SPLIT_HITS"
+        exit 20
+    fi
+    
+    echo " - Removing single-shard version from cloud"
+    local DELETE="http://$SOLR/solr/admin/collections?action=DELETEREPLICA&collection=cremas&shard=shard1&replica=core_node1"
+    echo "curl> $DELETE"
+    curl "$DELETE"
+
+    verify_cloud
     store_shards $TARGET
 }
 
@@ -190,5 +215,6 @@ copy_shard
 setup_cloud
 create_master
 split_master $MULTI_SHARDS
+( . ../../solrcloud/cloud_stop.sh $VERSION )
 
 echo "Done `date`"
