@@ -41,10 +41,10 @@ for S in `seq 1 $SOLRS`; do
     if [ ! -d solr$S ]; then
         >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
         >&2 echo "Please run ./cloud_install.sh $VERSION"
-        return
+    else
+        solr$S/bin/solr stop -p $SOLR_PORT
+        SOLR_PORT=$(( SOLR_PORT + 10 ))
     fi
-    solr$S/bin/solr stop -p $SOLR_PORT
-    SOLR_PORT=$(( SOLR_PORT + 10 ))
 done
    
 # Be sure to shut down the ZooKeepers last
