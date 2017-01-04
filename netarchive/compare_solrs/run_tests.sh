@@ -16,7 +16,7 @@ source cloud_control.sh
 : ${TEST_SEGMENTEDS:="false true"}
 : ${TEST_RUNS:="2"}
 : ${TEST_FACETS:="none vanilla sparse"}
-: ${TEST_DEST:=`date +%Y%m%d-%H%M`}
+: ${TEST_RESULT_DEST:=`pwd`/`date +%Y%m%d-%H%M`}
 
 : ${TEST_CLOUD_REUSE:="true"}
 
@@ -42,6 +42,7 @@ setup() {
 
     echo "    - Installing cloud at ${CLOUD}"
     fresh_cloud $TEST_SOLR
+    SOLR_MEM=$TEST_MEM
     ( . $CC/cloud_start.sh $TEST_SOLR )
     local SRC=$MASTER_DEST/$TEST_SOLR
     echo "   - Uploading config from $SRC/conf"
@@ -80,7 +81,7 @@ setup() {
 teardown() {
     local TEST_DEST_DESIGNATION=`echo $TEST_DEST | cut -d: -f1`
     local TEST_DEST_FOLDER=`echo $TEST_DEST | cut -d: -f2`
-    CLOUD="${TEST_DEST_FOLDER}/${TEST_SOLR}/${TEST_SHARD}_shards/segmented_${TEST_SEGMENTED}"
+    CLOUD="${TEST_DEST_FOLDER}/${TEST_SOLR}/shards=${TEST_SHARD}_segmented=${TEST_SEGMENTED}"
 
     echo "  - Shutting down cloud at $CLOUD"
     ( . $CC/cloud_stop.sh $TEST_SOLR )
@@ -99,14 +100,31 @@ teardown() {
 run_tests() {
     local R="${TEST_FACETS//[^ ]}"
     local RC="${#R}"
-    
+    : ${SOLR_BASE_PORT:=9000}
+    : ${SOLR:="http://$HOST:$SOLR_BASE_PORT/solr/cremas"}
+
     local TOTAL=$(( TEST_RUNS * (RC+1) ))
     local RUN=1
     for TEST_RUN in `seq 1 $TEST_RUNS`; do
         for TEST_FACET in $TEST_FACETS; do
             echo "    - Running test $RUN/$TOTAL with facet=$TEST_FACET"
             # TODO: Check that this is properly permissioned to be executed by user
+            if [ "vanilla" == "$TEST_FACET" ]; then
+                FACET=true
+                SPARSE=false
+            elif [ "sparse" == "$TEST_FACET" ]; then
+                FACET=true
+                SPARSE=true
+            else
+                FACET=false
+            fi
+            local TEST_DEST_DESIGNATION=`echo $TEST_DEST | cut -d: -f1`
+            local TEST_DEST_FOLDER=`echo $TEST_DEST | cut -d: -f2`
+            TESTQUERIES=${TEST_QUERIES}
             sudo ../../solrcloud/drop_cache.sh
+            ( . ../artificial_queries/run_tests.sh ${TEST_RESULT_DEST}/${TEST_DEST_DESIGNATION}/${TEST_SOLR}/shards=${TEST_SHARD}_segmented=${TEST_SEGMENTED}_facet=${TEST_FACET}_run=${TEST_RUN} )
+            SKIPFIRST=${TEST_SKIP_LOGLINES}
+            ( . ../artificial_queries/extract_results.sh ${TEST_RESULT_DEST}/${TEST_DEST_DESIGNATION}/${TEST_SOLR}/shards=${TEST_SHARD}_segmented=${TEST_SEGMENTED}_facet=${TEST_FACET}_run=${TEST_RUN} )
             RUN=$(( RUN+1 ))
         done
     done
@@ -129,7 +147,6 @@ main() {
                     setup
                     run_tests
                     teardown
-                    exit
                 done
             done
         done
