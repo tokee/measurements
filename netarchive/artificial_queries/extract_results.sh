@@ -2,7 +2,8 @@
 
 # Analyzes the results from a previous run_tests.sh
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
+EXBASE=`pwd`
 
 if [ -s performance.conf ]; then
     source performance.conf
@@ -28,7 +29,7 @@ fi
 if [ -s performance.include ]; then
     source performance.include
 fi
-_=${SKIPFIRST:=""}
+_=${SKIPFIRST:=0}
 _=${MAXTERMS:=4}
 _=${YMAX:=6000}
 
@@ -42,18 +43,21 @@ for TERMS in `seq 1 $MAXTERMS`; do
         cat "search.${TERMS}.not0" >> $CONCAT
     elif [ -s "search.${TERMS}.not0" ]; then
         echo "The raw Solr responses search.${TERMS} does not exist, but search.${TERMS}.not0 already exists"
+        cat "search.${TERMS}.not0" >> $CONCAT
     else
         echo "Error: Neither the raw Solr responses search.${TERMS}, nor search.${TERMS}.not0 exists. Unable to generate graph"
         continue
     fi
     # Simpler names
     cp "search.${TERMS}.not0" ${TERMS}-terms
-    MAXEXP=9 LOGY=false ../bucket.sh plotXYlog "${TERMS}-terms"
+    MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlog "${TERMS}-terms"
 done
 
+cat $CONCAT | tail -n +$((SKIPFIRST+1)) > search.1-${TERMS}.skipped.not0
+
 # Merged visualizations
-OUT=1_to_${MAXTERMS}_terms.png MAXEXP=9 LOGY=false ../bucket.sh plotXYlogs *-terms
-OUT=${CONCAT}.png MAXEXP=9 LOGY=false ../bucket.sh plotXYlog $CONCAT
+OUT=1_to_${MAXTERMS}_terms.png MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlogs *-terms
+OUT=${CONCAT}.png MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlog $CONCAT
 
 for TERMS in `seq 1 $MAXTERMS`; do
     if [ -s "${TERMS}-terms" ]; then

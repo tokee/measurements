@@ -4,7 +4,7 @@
 
 # TODO: Phrase searches, facet on/off, grouping, heavy queries (top-X terms)
 
-pushd $(dirname "$0") > /dev/null
+pushd ${BASH_SOURCE%/*} > /dev/null
 
 if [ -s performance.conf ]; then
     source performance.conf
@@ -14,17 +14,17 @@ if [ ! "." == ".$CONF" ]; then # Override conf
     source "$CONF"
 fi
 
-_=${SOLR:="http://example.com:8983/solr/collection1"}
-_=${QUERYFOLDER:=queries}
-_=${MAXTERMS:=4}
-_=${TESTQUERIES:=2000}
+: ${SOLR:="http://example.com:8983/solr/collection1"}
+: ${QUERYFOLDER:=queries}
+: ${MAXTERMS:=4}
+: ${TESTQUERIES:=2000}
 
-_=${QEXTRA:=""}
-_=${FACET:="true"}
-_=${SPARSE:="true"}
-_=${FACETFIELDS:="public_suffix content_type_norm crawl_year domain links_domains"}
-_=${FACETLIMIT:=10}
-_=${FL:="id,source_file_s,url_norm,host,domain,content_type_served,content_length,crawl_date,content_language"}
+: ${QEXTRA:=""}
+: ${FACET:="true"}
+: ${SPARSE:="true"}
+: ${FACETFIELDS:="public_suffix content_type_norm crawl_year domain links_domains"}
+: ${FACETLIMIT:=10}
+: ${FL:="id,source_file_s,url_norm,host,domain,content_type_served,content_length,crawl_date,content_language"}
 
 if [ ! -d $QUERYFOLDER ]; then
     >&2 echo "Error: The query folder \"$QUERYFOLDER\" does not exist."
