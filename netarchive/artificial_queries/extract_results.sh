@@ -50,14 +50,23 @@ for TERMS in `seq 1 $MAXTERMS`; do
     fi
     # Simpler names
     cp "search.${TERMS}.not0" ${TERMS}-terms
-    MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlog "${TERMS}-terms"
+    MAXEXP=9
+    LOGY=false
+    ( . $EXBASE/bucket.sh plotXYlog "${TERMS}-terms" )
 done
 
 cat $CONCAT | tail -n +$((SKIPFIRST+1)) > search.1-${TERMS}.skipped.not0
 
 # Merged visualizations
-OUT=1_to_${MAXTERMS}_terms.png MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlogs *-terms
-OUT=${CONCAT}.png MAXEXP=9 LOGY=false $EXBASE/bucket.sh plotXYlog $CONCAT
+OUT=1_to_${MAXTERMS}_terms.png
+MAXEXP=9
+LOGY=false
+( . $EXBASE/bucket.sh plotXYlogs *-terms )
+
+OUT=${CONCAT}.png
+MAXEXP=9
+LOGY=false
+( . $EXBASE/bucket.sh plotXYlog $CONCAT )
 
 for TERMS in `seq 1 $MAXTERMS`; do
     if [ -s "${TERMS}-terms" ]; then
