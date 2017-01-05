@@ -51,6 +51,7 @@ verify_cloud() {
                 return
             fi
         fi
+        local ATTEMPT=$(( ATTEMPT + 1 ))
     done
     >&2 echo "Error: Unable to get hits for query '$LSEQ' from $SEARCH_URL"
     >&2 echo "$RES"
@@ -118,14 +119,16 @@ ready_shards() {
 force_segmentation() {
     : ${SOLR_BASE_PORT:=9000}
     : ${SOLR:="$HOST:$SOLR_BASE_PORT"}
-    
-    echo "   - Forcing segmentation by adding $DOCS dummy documents"
-    if [ `verify_cloud` -le 0 ]; then
-        >&2 echo "Unable to segment index as it contains no documents"
-        exit 15
-    fi
     # Don't change the DOCS without changing clean_up_segmentation
     local DOCS=10
+
+    echo "   - Verifying collection prior to segmentation"
+    local PRE_HITS=`verify_cloud`
+    if [ $PRE_HITS -le 0 ]; then
+        >&2 echo "Error: Unable to segment index as it contains no documents"
+        exit 15
+    fi
+    echo "   - Forcing segmentation by adding $DOCS dummy documents to the existing $PRE_HITS"
     local ADD="[{\"id\":\"1\"}"
     for D in `seq 2 $DOCS`; do
         local ADD="${ADD},{\"id\":\"$D\"}"
@@ -133,7 +136,7 @@ force_segmentation() {
     local ADD="${ADD}]"
     
     echo "curl> \"$SOLR/solr/cremas/update?commit=true\" -H 'Contenttype: application/json' -d \"$ADD\""
-    curl "$SOLR/solr/cremas/update?commit=true" -H 'Contenttype: application/json' -d "$ADD"
+    curl -m 120 "$SOLR/solr/cremas/update?commit=true" -H 'Contenttype: application/json' -d "$ADD"
 }
 clean_up_segmentation() {
     : ${SOLR_BASE_PORT:=9000}
@@ -145,7 +148,7 @@ clean_up_segmentation() {
     fi
     local DELETE_QUERY="id:1 OR id:2 OR id:3 OR id:4 OR id:5 OR id:6 OR id:7 OR id:8 OR id:9 OR id:10"
     echo "curl> \"$SOLR/solr/cremas/update?commit=true\" -H 'Contenttype: application/json' -d \"$DELETE_QUERY\""
-    curl "$SOLR/solr/cremas/update?commit=true&waitSearcher=true" -H 'Contenttype: application/json' -d "<delete><query>$DELETE_QUERY</query></delete>"
+    curl -m 120 "$SOLR/solr/cremas/update?commit=true&waitSearcher=true" -H 'Contenttype: application/json' -d "<delete><query>$DELETE_QUERY</query></delete>"
     if [ `verify_cloud` -le 0 ]; then
         >&2 echo "Unable to get document count after segment clean up"
         exit 26
