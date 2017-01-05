@@ -52,9 +52,11 @@ for TERMS in `seq 1 $MAXTERMS`; do
     echo "Issuing $TESTQUERIES queries with $TERMS terms"
     COUNT=1
     while IFS= read -r QUERY; do
-        URL="$BASEURL&q=`echo -n "$QUERY" | tr ' ' '+'`"
+        #URL="$BASEURL&q=`echo -n "$QUERY" | tr ' ' '+'`"
+#        Q="`echo -n "$QUERY" | tr ' ' '+'`"
         echo "- $COUNT/$TESTQUERIES: $QUERY"
-        curl -s "$URL" >> "$DEST/search.${TERMS}"
+#        curl -s "$URL" >> "$DEST/search.${TERMS}"
+        curl -s -G "$BASEURL" --data-urlencode "q=$QUERY" >> "$DEST/search.${TERMS}"
         COUNT=$(( COUNT+1 ))
         if [ $COUNT -gt $TESTQUERIES ]; then
             break
