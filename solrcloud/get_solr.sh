@@ -17,7 +17,7 @@ function download() {
         return
     fi
     echo "- Downloading $2"
-    curl "$1" > $2
+    wget -q "$1" -O $2
 }
 
 function ensuresource() {
@@ -31,9 +31,12 @@ function ensuresource() {
     
 # Authenticated redirect to AWS that is not automated yet
 if [ ! -s sparse-4.10.war ]; then
-    #download "https://github.com/tokee/lucene-solr/releases/download/sparse_4.10_20150730-alpha/solr-4.10-SNAPSHOT-heuristic-SOLR-5894-20150730-1235.war" sparse-4.10.war
-    echo "Please download solr-4.10-SNAPSHOT-heuristic-SOLR-5894-20150730-1235.war from https://github.com/tokee/lucene-solr/releases/ and save it in the cache folder with the name sparse-4.10.war"
-    exit 1
+    download "https://github.com/tokee/lucene-solr/releases/download/sparse_4.10_20150730-alpha/solr-4.10-SNAPSHOT-heuristic-SOLR-5894-20150730-1235.war" sparse-4.10.war
+    
+    if [ ! -s sparse-4.10.war ]; then
+        echo "Please download solr-4.10-SNAPSHOT-heuristic-SOLR-5894-20150730-1235.war from https://github.com/tokee/lucene-solr/releases/ and save it in the cache folder with the name sparse-4.10.war"
+        exit 1
+    fi
 else
     echo "- Already downloaded sparse-4.10.war"
 fi
