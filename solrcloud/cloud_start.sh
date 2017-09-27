@@ -60,8 +60,16 @@ for S in `seq 1 $SOLRS`; do
         >&2 echo "Please run ./cloud_install.sh $VERSION"
         continue
     fi
-    echo "calling> solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST"
-    solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST
+    SOLR_START_COMMAND="`pwd`/solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST"
+    echo "calling> $SOLR_START_COMMAND"
+    LOCAL_SHOME=`pwd`/solr$S/$SOLR_HOME_SUB
+    SOLR_START_RESULT=`solr$S/bin/solr -m $SOLR_MEM -cloud -s $LOCAL_SHOME -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST`
+    if [ "." == ".`echo \"$SOLR_START_RESULT\" | grep \"Started Solr server\"`" ]; then
+        >&2 echo "Error: Unable to start Solr server using command"
+        >&2 echo "$SOLR_START_COMMAND"
+        >&2 echo "$SOLR_START_RESULT"
+        exit 28
+    fi
     SOLR_PORT=$(( SOLR_PORT + 10 ))
 done
 

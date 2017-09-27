@@ -119,7 +119,7 @@ function install() {
         VERSION=4.10.4
     fi
     SPACK=solr-${VERSION}.tgz
-    ZPACK=`basename "$ZOO_URL"`
+    ZPACK=$(basename "$ZOO_URL")
     check_package $SPACK
     check_package $ZPACK
     echo "  - Source packages: $SPACK and $ZPACK"
@@ -129,7 +129,7 @@ function install() {
 
     # Version specific parts
     
-    if [ ! "." == ".`echo \" 4.10.4-sparse 4.10.4 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
+    if [ ! "." == ".`echo \" 4.10.4-sparse 4.10.4 5.5.4 6.6.1 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
         solr $SPACK
         popd > /dev/null # ${CLOUD}/$DEST
         return

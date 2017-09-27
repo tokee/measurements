@@ -7,7 +7,6 @@
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 
-
 mkdir -p cache
 pushd cache > /dev/null
 
@@ -38,8 +37,8 @@ else
     echo "- Already downloaded sparse-4.10.war"
 fi
 download "http://archive.apache.org/dist/lucene/solr/4.10.4/solr-4.10.4.tgz" solr-4.10.4.tgz
-download "http://archive.apache.org/dist/lucene/solr/5.5.3/solr-5.5.3.tgz" solr-5.5.3.tgz
-download "http://archive.apache.org/dist/lucene/solr/6.3.0/solr-6.3.0.tgz" solr-6.3.0.tgz
+download "http://archive.apache.org/dist/lucene/solr/5.5.4/solr-5.5.4.tgz" solr-5.5.4.tgz
+download "http://archive.apache.org/dist/lucene/solr/6.6.1/solr-6.6.1.tgz" solr-6.6.1.tgz
 download "$ZOO_URL" `basename "$ZOO_URL"`
 
 # Compile time. Version should match https://issues.apache.org/jira/browse/LUCENE-7521

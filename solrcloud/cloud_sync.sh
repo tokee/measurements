@@ -25,9 +25,13 @@ fi
 if [ "." == ".$CONFIG_FOLDER" -o "." == ".$CONFIG_NAME" ]; then
     usage
 fi
-if [ ! -d $CONFIG_FOLDEr ]; then
+if [ ! -d $CONFIG_FOLDER ]; then
     >&2 echo "The config folder '$CONFIG_FOLDER' does not exist"
     usage 2
+fi
+if [ ! -s $CONFIG_FOLDER/schema.xml ]; then
+    >&2 echo "No schema.xml in the config folder '$CONFIG_FOLDER'"
+    usage 21
 fi
 if [ ! -d ${CLOUD}/$VERSION ]; then
     >&2 echo "No cloud present at ${CLOUD}/${VERSION}. Please install and start a cloud first with"

@@ -33,7 +33,7 @@ verify_cloud() {
     local RETRIES=20
     local SLEEP=1
     
-    local SEARCH_URL="http://$SOLR/solr/cremas/select?rows=0&q=$LSEQ"
+    local SEARCH_URL="$SOLR/solr/cremas/select?rows=0&q=$LSEQ"
     #echo "curl> $SEARCH_URL"
     local ATTEMPT=0
     while [ $ATTEMPT -lt $RETRIES ]; do
