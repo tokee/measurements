@@ -15,9 +15,11 @@ function usage() {
     exit $1
 }
 
-if [ -z $1 ]; then
+if [[ -z "$1" && -z "$VERSION" ]]; then
     echo "No Solr version specified."$'\n'
     usage
+elif [[ ! -z "$1" ]]; then
+    VERSION="$1"
 fi
 
 # Input: Package

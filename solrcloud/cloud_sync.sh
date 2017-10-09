@@ -11,12 +11,22 @@ source general.conf
 
 function usage() {
     echo "Usage: ./cloud_sync.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`> <config_folder> <config_id> [collection]"
+    echo ""
+    echo "If VERSION is specified in custom.conf, it can be skipped, reducing the call to"
+    echo "./cloud_sync.sh <config_folder> <config_id> [collection]"
     exit $1
 }
-VERSION="$1"
-CONFIG_FOLDER="$2"
-CONFIG_NAME="$3"
-COLLECTION="$4"
+if [[ -z "$VERSION" ]]; then
+    # Version is specified in config, so not needed
+    VERSION="$1"
+    CONFIG_FOLDER="$2"
+    CONFIG_NAME="$3"
+    COLLECTION="$4"
+else
+    CONFIG_FOLDER="$1"
+    CONFIG_NAME="$2"
+    COLLECTION="$3"
+fi    
 
 if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
     >&2 echo "The Solr version $VERSION is unsupported"

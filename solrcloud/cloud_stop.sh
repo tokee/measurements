@@ -18,11 +18,13 @@ function usage() {
     exit $1
 }
 
-if [ -z $1 ]; then
+if [[ -z "$1" && -z "$VERSION" ]]; then
     echo "No Solr version specified."$'\n'
     usage
+elif [[ ! -z "$1" ]]; then
+    VERSION="$1"
 fi
-VERSION="$1"
+          
 if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
     >&2 echo "The Solr version $VERSION is unsupported"
     usage 1
