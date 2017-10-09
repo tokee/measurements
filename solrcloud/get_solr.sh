@@ -42,6 +42,7 @@ fi
 download "http://archive.apache.org/dist/lucene/solr/4.10.4/solr-4.10.4.tgz" solr-4.10.4.tgz
 download "http://archive.apache.org/dist/lucene/solr/5.5.4/solr-5.5.4.tgz" solr-5.5.4.tgz
 download "http://archive.apache.org/dist/lucene/solr/6.6.1/solr-6.6.1.tgz" solr-6.6.1.tgz
+download "http://archive.apache.org/dist/lucene/solr/7.0.1/solr-7.0.1.tgz" solr-7.0.1.tgz
 download "$ZOO_URL" `basename "$ZOO_URL"`
 
 # Compile time. Version should match https://issues.apache.org/jira/browse/LUCENE-7521

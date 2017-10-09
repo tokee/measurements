@@ -67,7 +67,7 @@ function solr() {
         mv solr-* $FOLDER
     fi
     
-    if [ "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
+    if [ "." == ".`echo \" $LAYOUT2_VERSIONS \" | grep \" $DEST \"`" ]; then
         # We inject the JARs into the WAR to avoid fiddling with solrconfig.xml
         pushd $FOLDER/example/webapps/ > /dev/null
         if [ ! "." == ".$SPARSE_WAR" ]; then
@@ -90,7 +90,7 @@ function solr() {
             cp -r $FOLDER solr$S
 
             # The three libraries below are needed for collator sorting
-            if [ ! "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
+            if [ ! "." == ".`echo \" $LAYOUT2_VERSIONS \" | grep \" $DEST \"`" ]; then
                 local SOLR_LIB=solr$S/server/solr/lib/
                 mkdir -p $SOLR_LIB
                 cp $FOLDER/dist/solr-analysis-extras-*.jar $SOLR_LIB
@@ -129,7 +129,7 @@ function install() {
 
     # Version specific parts
     
-    if [ ! "." == ".`echo \" 4.10.4-sparse 4.10.4 5.5.4 6.6.1 trunk trunk-7521 \" | grep \" $DEST \"`" ]; then
+    if [ ! "." == ".`echo \" $VERSIONS \" | grep \" $DEST \"`" ]; then
         solr $SPACK
         popd > /dev/null # ${CLOUD}/$DEST
         return

@@ -48,7 +48,7 @@ for Z in `seq 1 $ZOOS`; do
     zoo$Z/bin/zkServer.sh start
 done
 
-if [ ! "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $VERSION \"`" ]; then
+if [ ! "." == ".`echo \" $LAYOUT2_VERSIONS \" | grep \" $VERSION \"`" ]; then
     SOLR_HOME_SUB=server/solr/
 else
     SOLR_HOME_SUB=example/solr/

@@ -41,7 +41,7 @@ if [ ! -d ${CLOUD}/$VERSION ]; then
 fi
 pushd ${CLOUD}/$VERSION > /dev/null
 
-if [ "." == ".`echo \" 5.5.3 6.3.0 trunk trunk-7521 \" | grep \" $VERSION \"`" ]; then
+if [ "." == ".`echo \" $LAYOUT2_VERSIONS \" | grep \" $VERSION \"`" ]; then
     : ${SOLR_SCRIPTS:="solr1/example/scripts/cloud-scripts"}
 else
     : ${SOLR_SCRIPTS:="solr1/server/scripts/cloud-scripts"}
