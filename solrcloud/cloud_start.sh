@@ -7,6 +7,7 @@
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 : ${CLOUD:=`pwd`/cloud}
+: ${RETRIES:=6} # default number of retries on start probe before giving up
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
@@ -62,6 +63,7 @@ for S in `seq 1 $SOLRS`; do
         >&2 echo "Please run ./cloud_install.sh $VERSION"
         continue
     fi
+    sed -i "s/loops -lt [0-9]\+ /loops -lt $RETRIES /" $(pwd)/solr$S/bin/solr
     SOLR_START_COMMAND="`pwd`/solr$S/bin/solr -m $SOLR_MEM -cloud -s `pwd`/solr$S/$SOLR_HOME_SUB -p $SOLR_PORT -z $HOST:$ZOO_BASE_PORT -h $HOST"
     echo "calling> $SOLR_START_COMMAND"
     LOCAL_SHOME=`pwd`/solr$S/$SOLR_HOME_SUB
