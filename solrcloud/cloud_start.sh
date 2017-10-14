@@ -8,6 +8,7 @@ pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 : ${CLOUD:=`pwd`/cloud}
 : ${RETRIES:=6} # default number of retries on start probe before giving up
+: ${AUTO_INSTALL:=false}
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
@@ -28,6 +29,10 @@ if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
     usage 1
 fi
 if [ ! -d ${CLOUD}/$VERSION ]; then
+    if [[ "true" != "$AUTO_INSTALL" ]]; then
+        >&2 echo "Error: No Solr installed at ${CLOUD}/$VERSION"
+        usage 5
+    fi
     echo "Attempting install of missing SolrCloud version $VERSION"
     ./cloud_install.sh $VERSION
     if [ ! -d ${CLOUD}/$VERSION ]; then
