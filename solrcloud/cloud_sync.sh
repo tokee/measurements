@@ -8,6 +8,8 @@ set -e
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 : ${CLOUD:=`pwd`/cloud}
+# If true, existing configs with the same ID are overwritten
+: ${FORCE_CONFIG:="false"}
 
 function usage() {
     echo "Usage: ./cloud_sync.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`> <config_folder> <config_id> [collection]"
@@ -78,7 +80,7 @@ fi
 set +e
 EXISTS="`$SOLR_SCRIPTS/zkcli.sh -zkhost $ZOOKEEPER -cmd list | grep \"/configs/$CONFIG_NAME/\"`" >> /dev/null 2>> /dev/null
 set -e
-if [ "." == ".$EXISTS" ]; then
+if [[ "." == ".$EXISTS" || "true" == "$FORCE_CONFIG" ]]; then
     # Upload the config
     echo "Adding/updating Solr config $CONFIG_NAME from $CONFIG_FOLDER to ZooKeeper at $ZOOKEEPER"
     echo "> $SOLR_SCRIPTS/zkcli.sh -zkhost $ZOOKEEPER -cmd upconfig -confname $CONFIG_NAME -confdir \"$CONFIG_FOLDER\""
