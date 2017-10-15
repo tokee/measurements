@@ -4,6 +4,7 @@
 # Stops a specific SolrCloud
 #
 # TODO: Figure out which cloud is running and stop it, so that version need not be specified
+# TODO: In case of hard stop, remove write.lock
 #
 
 pushd ${BASH_SOURCE%/*} > /dev/null

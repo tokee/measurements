@@ -3,6 +3,8 @@
 #
 # Starts a specific SolrCloud
 #
+# TODO: Increase 5 second timeout on shutdown to avoid stale write.lock
+#
 
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
