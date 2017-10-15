@@ -2,6 +2,7 @@
 
 : ${OPTIMIZEDS:="false true"}
 : ${STORAGES:="ssd spinning"}
+: ${OPTIMIZED_SEGMENTS_POSTFIX:=""}
 
 : ${SOLR_VERSIONS:="4.10.4-sparse 6.6.1"}
 : ${SHARDSS:="4 2 1"}
@@ -23,7 +24,7 @@ for OPTIMIZED in $OPTIMIZEDS; do
             exit 4
         fi
         if [[ "true" == "$OPTIMIZED" ]]; then
-            CLOUD_ROOT="${CLOUD_ROOT}/optimized"
+            CLOUD_ROOT="${CLOUD_ROOT}/optimized${OPTIMIZED_SEGMENTS_POSTFIX}"
         elif [[ "false" == "$OPTIMIZED" ]]; then
             CLOUD_ROOT="${CLOUD_ROOT}"
         else
