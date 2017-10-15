@@ -76,6 +76,12 @@ check_parameters() {
     fi
 }
 
+dump_options() {
+    for VAL in $( cat "${BASH_SOURCE}" | grep -o ': ${[A-Z_]*:=' | grep -o '[A-Z_]*'); do
+        echo ": \${$VAL:=\"$(eval echo '$'$VAL)\"}"
+    done
+}
+
 # Input: URL query outfile (can be shared as appending is synchronized with flock)
 # Output: httptimems hits query
 solr_request() {
@@ -215,6 +221,7 @@ pack_full_logs() {
 }
 
 check_parameters
+dump_options > "${DEST}/measure.conf"
 combine_setups
 pack_full_logs
 
