@@ -5,6 +5,7 @@
 # Requires the folder dict/ with sample queries
 
 # TODO: grouping
+# TODO: Log output from free, /proc/cpu and similar basic system observations
 
 if [[ ".$CONFIG" != "." ]]; then
     echo "Sourcing custom config $CONFIG"
