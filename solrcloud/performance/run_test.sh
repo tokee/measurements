@@ -1,6 +1,6 @@
 #!/bin/bash
 
-: ${OPTIMIZEDS:="false true"}
+: ${OPTIMIZEDS:="true false"}
 : ${STORAGES:="ssd spinning"}
 : ${OPTIMIZED_SEGMENTS_POSTFIX:=""}
 
