@@ -223,6 +223,7 @@ pack_full_logs() {
 
 check_parameters
 dump_options > "${DEST}/measure.conf"
+free -h > "${DEST}/free.log"
 combine_setups
 pack_full_logs
 
