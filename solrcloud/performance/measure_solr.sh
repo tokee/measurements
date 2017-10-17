@@ -16,6 +16,9 @@ if [[ -s "measure_solr.conf" ]]; then
     source "measure_solr.conf"
 fi
 
+# Cloud must be defined from the outside.
+# Keep it here to have it dumped with the rest of the options
+: ${CLOUD:=""}
 : ${COLLECTION:="collection1"}
 
 # Output only
@@ -23,6 +26,7 @@ fi
 : ${OPTIMISED:="NA"}
 : ${SOLR_VERSION:="NA"}
 : ${STORAGE:="NA"} # spin /ssd
+: ${OPTIMIZED_SEGMENTS_POSTFIX:=""}
 
 # Count from this
 : ${TERM_SOURCE:="0"}
@@ -123,7 +127,7 @@ run_tests() {
     201>$T_FULL # Used by flock
     
     #http://tokemon.sb.statsbiblioteket.dk:9000/solr/net_4s_shard3_replica1/select?q=er+der
-    export OUT_BASE="results_fmode=${FACET_MODE}_#facets=${FACETS}_facetLimit=${FACET_LIMIT}_hl=${HL}_threads=${THREADS}_run=${RUN}_solr=${SOLR_VERSION}_shards=${SHARDS}_optimized=${OPTIMIZED}_storage=${STORAGE}"
+    export OUT_BASE="results_fmode=${FACET_MODE}_#facets=${FACETS}_facetLimit=${FACET_LIMIT}_hl=${HL}_threads=${THREADS}_run=${RUN}_solr=${SOLR_VERSION}_shards=${SHARDS}_optimized=${OPTIMIZED}${OPTIMIZED_SEGMENTS_POSTFIX}_storage=${STORAGE}"
     export OUT_LOG="${DEST}/${OUT_BASE}.log"
     export OUT_LOG_FULL="${DEST}/${OUT_BASE}.log_full"
 
