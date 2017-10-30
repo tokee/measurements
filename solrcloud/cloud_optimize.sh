@@ -3,10 +3,14 @@
 #
 # Optimize a SolrCloud collection
 #
+# Deprecated (read: Never used)
+
+###############################################################################
+# CONFIG
+###############################################################################
 
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
-
 : ${CLOUD:=`pwd`/cloud}
 : ${MAX_SEGMENTS:=1}
 popd > /dev/null
@@ -14,6 +18,10 @@ popd > /dev/null
 # curl -s "http://localhost:9010/solr/admin/cores?action=STATUS&wt=json" | jq '.status | ..[] | .cloud.replica' 2> /dev/null
 
 : ${RETRIES:=6} # default number of retries on start probe before giving up
+
+################################################################################
+# FUNCTIONS
+################################################################################
 
 function usage() {
     echo "Usage: ./cloud_optimize.sh"

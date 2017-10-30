@@ -4,23 +4,33 @@
 # Installs a specific SolrCloud
 #
 
+###############################################################################
+# CONFIG
+###############################################################################
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
 SHOME=`pwd`
 : ${CACHE:=`pwd`/cache}
 : ${CLOUD:=`pwd`/cloud}
+popd > /dev/null
+
+################################################################################
+# FUNCTIONS
+################################################################################
 
 function usage() {
     echo "Usage: ./cloud_install.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
     exit $1
 }
 
-if [[ -z "$1" && -z "$VERSION" ]]; then
-    echo "No Solr version specified."$'\n'
-    usage
-elif [[ ! -z "$1" ]]; then
-    VERSION="$1"
-fi
+check_parameters() {
+    if [[ -z "$1" && -z "$VERSION" ]]; then
+        echo "No Solr version specified."$'\n'
+        usage
+    elif [[ ! -z "$1" ]]; then
+        VERSION="$1"
+    fi
+}
 
 # Input: Package
 function check_package() {
@@ -141,8 +151,14 @@ function install() {
     usage 1
 }
 
+###############################################################################
+# CODE
+###############################################################################
+
+check_parameters "$@"
+
+pushd ${BASH_SOURCE%/*} > /dev/null
 for V in $@; do
     install $V
 done
-
-popd > /dev/null # pwd
+popd > /dev/null

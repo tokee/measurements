@@ -7,10 +7,18 @@
 # TODO: In case of hard stop, remove write.lock
 #
 
+###############################################################################
+# CONFIG
+###############################################################################
+
 pushd ${BASH_SOURCE%/*} > /dev/null
 source general.conf
-
 : ${CLOUD:=`pwd`/cloud}
+popd > /dev/null
+
+################################################################################
+# FUNCTIONS
+################################################################################
 
 function usage() {
     echo "Usage: ./cloud_start.sh <`echo \"$VERSIONS\" | sed 's/ / | /g'`>"
@@ -19,47 +27,58 @@ function usage() {
     exit $1
 }
 
-if [[ -z "$1" && -z "$VERSION" ]]; then
-    echo "No Solr version specified."$'\n'
-    usage
-elif [[ ! -z "$1" ]]; then
-    VERSION="$1"
-fi
-          
-if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
-    >&2 echo "The Solr version $VERSION is unsupported"
-    usage 1
-fi
-if [ ! -d ${CLOUD}/$VERSION ]; then
-    >&2 echo "The Solr version $VERSION is not installed."
-    >&2 echo "Please run ./install_cloud.sh $VERSION"
-    exit 3
-fi
+check_parameters() {
+    if [[ -z "$1" && -z "$VERSION" ]]; then
+        echo "No Solr version specified."$'\n'
+        usage
+    elif [[ ! -z "$1" ]]; then
+        VERSION="$1"
+    fi
+    
+    if [ "." == ".`echo \" $VERSIONS \" | grep \" $VERSION \"`" ]; then
+        >&2 echo "The Solr version $VERSION is unsupported"
+        usage 1
+    fi
+    if [ ! -d ${CLOUD}/$VERSION ]; then
+        >&2 echo "The Solr version $VERSION is not installed."
+        >&2 echo "Please run ./install_cloud.sh $VERSION"
+        exit 3
+    fi
+}
+
+stop_zoo() {
+    # Be sure to shut down the ZooKeepers last
+    for Z in `seq 1 $ZOOS`; do
+        if [ ! -d zoo$Z ]; then
+            >&2 echo "Expected a ZooKeeper-instalation at `pwd`/zoo$S but found none."
+            >&2 echo "Please run ./cloud_install.sh $VERSION"
+            return
+        fi
+        zoo$Z/bin/zkServer.sh stop
+    done
+}
+
+stop_solr() {
+    SOLR_PORT=$SOLR_BASE_PORT
+    for S in `seq 1 $SOLRS`; do
+        if [ ! -d solr$S ]; then
+            >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
+            >&2 echo "Please run ./cloud_install.sh $VERSION"
+        else
+            solr$S/bin/solr stop -p $SOLR_PORT
+            SOLR_PORT=$(( SOLR_PORT + 10 ))
+        fi
+    done
+}
+
+###############################################################################
+# CODE
+###############################################################################
+
+check_parameters "$@"
 
 pushd ${CLOUD}/$VERSION > /dev/null
+stop_solr
+stop_zoo
+popd > /dev/null
 
-
-SOLR_PORT=$SOLR_BASE_PORT
-for S in `seq 1 $SOLRS`; do
-    if [ ! -d solr$S ]; then
-        >&2 echo "Expected a Solr-instalation at `pwd`/solr$S but found none."
-        >&2 echo "Please run ./cloud_install.sh $VERSION"
-    else
-        solr$S/bin/solr stop -p $SOLR_PORT
-        SOLR_PORT=$(( SOLR_PORT + 10 ))
-    fi
-done
-   
-# Be sure to shut down the ZooKeepers last
-for Z in `seq 1 $ZOOS`; do
-    if [ ! -d zoo$Z ]; then
-        >&2 echo "Expected a ZooKeeper-instalation at `pwd`/zoo$S but found none."
-        >&2 echo "Please run ./cloud_install.sh $VERSION"
-        return
-    fi
-    zoo$Z/bin/zkServer.sh stop
-done
-
-popd > /dev/null # ${CLOUD}/$VERSION
-
-popd > /dev/null # pwd
