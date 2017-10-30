@@ -7,6 +7,10 @@
 # TODO: grouping
 # TODO: Log output from free, /proc/cpu and similar basic system observations
 
+###############################################################################
+# CONFIG
+###############################################################################
+
 if [[ ".$CONFIG" != "." ]]; then
     echo "Sourcing custom config $CONFIG"
     source "$CONFIG"
@@ -62,7 +66,6 @@ CALL_BASE="http://$SERVER:$PORT/$SOLRPATH/$COLLECTION/$HANDLER?wt=json&indent=tr
 : ${SPARSE_FRACTION:="0.08"}
 
 export THIS_SCRIPT=$(basename $0)
-mkdir -p "$DEST"
 
 export SECONDS
 export TIMEOUT
@@ -73,6 +76,11 @@ export OP
 export SPARSE_MINTAGS
 export SPARSE_FRACTION
 INITIAL_TERM_SOURCE=$TERM_SOURCE
+
+################################################################################
+# FUNCTIONS
+################################################################################
+
 
 check_parameters() {
     if [[ "$SHARD" == "NA" || "$OPTIMIZED" == "NA" || "$SOLR_VERSION" == "NA" || "$STORAGE" == "NA" ]]; then
@@ -158,6 +166,10 @@ run_tests() {
     CURRENT_BASE="$CURRENT_BASE&hl=${HL}"
     TERMS="queries/queries_1k_${TERM_SOURCE}"
 
+    if [[ -s "OUT_LOG" ]]; then
+        echo "- $TEST_NUM/$TOTAL_TESTS SKIPPING (already exists) $OUT_LOG"
+        return
+    fi
     echo "- $TEST_NUM/$TOTAL_TESTS $OUT_LOG"
     export CURRENT_BASE
     #echo "timeout ${TIMEOUT} cat \"$TERMS\" | head -n $MAX_QUERIES | tr '\n' '\0' | xargs -0 -P ${THREADS} -n 1 -I {} bash -c 'solr_request \"{}\"'"
@@ -225,6 +237,11 @@ pack_full_logs() {
     gzip ${DEST}/*.log_full
 }
 
+###############################################################################
+# CODE
+###############################################################################
+
+mkdir -p "$DEST"
 check_parameters
 dump_options > "${DEST}/measure.conf"
 free -h > "${DEST}/free.log"

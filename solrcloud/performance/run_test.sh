@@ -13,6 +13,9 @@
 : ${FACET_MODES:="none skip facet solr"}
 : ${HLS:="false"}
 
+# Clean up dirty shutdowns
+find /mnt/index/np/ /mnt/bulk/np/ -iname write.lock -exec rm "{}" \;
+
 for OPTIMIZED in $OPTIMIZEDS; do
     for STORAGE in $STORAGES; do
         if [[ "ssd" == "$STORAGE" ]]; then
